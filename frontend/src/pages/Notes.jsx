@@ -1,7 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { FileText, Copy, Download, Sparkles, Target, Clock } from 'lucide-react';
 import { notesService } from '../services/notesService';
 import toast from 'react-hot-toast';
+
+// ...existing code...
+const AIReader = ({ text }) => {
+  const synth = window.speechSynthesis;
+  const utteranceRef = useRef(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const speak = () => {
+    if (synth.speaking) synth.cancel();
+    const utterance = new window.SpeechSynthesisUtterance(text);
+    utterance.rate = 1;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+    };
+    utteranceRef.current = utterance;
+    synth.speak(utterance);
+  };
+
+  const pause = () => {
+    synth.pause();
+    setIsPaused(true);
+  };
+
+  const resume = () => {
+    synth.resume();
+    setIsPaused(false);
+  };
+
+  const stop = () => {
+    synth.cancel();
+    setIsSpeaking(false);
+    setIsPaused(false);
+  };
+
+  // Animation styles
+  const baseBtn =
+    "px-3 py-1 rounded transition-all duration-200 font-medium shadow hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-400";
+  const playBtn =
+    baseBtn +
+    " bg-green-500 text-white hover:bg-green-600 " +
+    (isSpeaking ? "animate-pulse" : "");
+  const pauseBtn =
+    baseBtn +
+    " bg-yellow-400 text-white hover:bg-yellow-500 " +
+    (isPaused ? "animate-bounce" : "");
+  const resumeBtn =
+    baseBtn +
+    " bg-blue-500 text-white hover:bg-blue-600 " +
+    (isPaused ? "animate-pulse" : "");
+  const stopBtn =
+    baseBtn +
+    " bg-red-500 text-white hover:bg-red-600 " +
+    (isSpeaking ? "animate-bounce" : "");
+
+  return (
+    <div style={{ margin: "1em 0" }}>
+      <div style={{ display: "flex", gap: "0.5em" }}>
+        <button
+          className={playBtn}
+          onClick={speak}
+          disabled={isSpeaking || !text}
+        >
+          Play
+        </button>
+        <button
+          className={pauseBtn}
+          onClick={pause}
+          disabled={!isSpeaking || isPaused}
+        >
+          Pause
+        </button>
+        <button
+          className={resumeBtn}
+          onClick={resume}
+          disabled={!isPaused}
+        >
+          Resume
+        </button>
+        <button
+          className={stopBtn}
+          onClick={stop}
+          disabled={!isSpeaking}
+        >
+          Stop
+        </button>
+      </div>
+    </div>
+  );
+};
+// ...existing code...
 
 const Notes = () => {
   const [text, setText] = useState('');
@@ -211,6 +304,8 @@ const Notes = () => {
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                     <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{result.summary}</p>
                   </div>
+                  {/* AIReader for summary */}
+                  <AIReader text={result.summary} />
                   <div className="mt-2 flex items-center justify-between">
                     <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                       <Clock className="h-4 w-4 mr-1" />
@@ -256,6 +351,8 @@ const Notes = () => {
                         ))}
                       </ul>
                     </div>
+                    {/* AIReader for key points */}
+                    <AIReader text={result.key_points.join('. ')} />
                     <div className="mt-2 flex justify-end">
                       <button
                         onClick={() => copyToClipboard(result.key_points.join('\n• '))}
@@ -294,4 +391,4 @@ const Notes = () => {
   );
 };
 
-export default Notes; 
+export default Notes;

@@ -1,6 +1,99 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lightbulb, BookOpen, Sparkles, Loader, RefreshCw, ArrowRight } from 'lucide-react';
 import { eli5Service } from '../services/eli5Service';
+
+// --- AIReader Component (inline) ---
+const AIReader = ({ text }) => {
+  const synth = window.speechSynthesis;
+  const utteranceRef = useRef(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const speak = () => {
+    if (synth.speaking) synth.cancel();
+    const utterance = new window.SpeechSynthesisUtterance(text);
+    utterance.rate = 1;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+    };
+    utteranceRef.current = utterance;
+    synth.speak(utterance);
+  };
+
+  const pause = () => {
+    synth.pause();
+    setIsPaused(true);
+  };
+
+  const resume = () => {
+    synth.resume();
+    setIsPaused(false);
+  };
+
+  const stop = () => {
+    synth.cancel();
+    setIsSpeaking(false);
+    setIsPaused(false);
+  };
+
+  // Animation styles
+  const baseBtn =
+    "px-3 py-1 rounded transition-all duration-200 font-medium shadow hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-400";
+  const playBtn =
+    baseBtn +
+    " bg-green-500 text-white hover:bg-green-600 " +
+    (isSpeaking ? "animate-pulse" : "");
+  const pauseBtn =
+    baseBtn +
+    " bg-yellow-400 text-white hover:bg-yellow-500 " +
+    (isPaused ? "animate-bounce" : "");
+  const resumeBtn =
+    baseBtn +
+    " bg-blue-500 text-white hover:bg-blue-600 " +
+    (isPaused ? "animate-pulse" : "");
+  const stopBtn =
+    baseBtn +
+    " bg-red-500 text-white hover:bg-red-600 " +
+    (isSpeaking ? "animate-bounce" : "");
+
+  return (
+    <div style={{ margin: "1em 0" }}>
+      <div style={{ display: "flex", gap: "0.5em" }}>
+        <button
+          className={playBtn}
+          onClick={speak}
+          disabled={isSpeaking || !text}
+        >
+          Play
+        </button>
+        <button
+          className={pauseBtn}
+          onClick={pause}
+          disabled={!isSpeaking || isPaused}
+        >
+          Pause
+        </button>
+        <button
+          className={resumeBtn}
+          onClick={resume}
+          disabled={!isPaused}
+        >
+          Resume
+        </button>
+        <button
+          className={stopBtn}
+          onClick={stop}
+          disabled={!isSpeaking}
+        >
+          Stop
+        </button>
+      </div>
+    </div>
+  );
+};
+// --- End AIReader Component ---
 
 const ELI5 = () => {
   const [topic, setTopic] = useState('');
@@ -141,6 +234,8 @@ const ELI5 = () => {
                   <p className="text-gray-700 dark:text-gray-300">
                     {explanation.simple_explanation}
                   </p>
+                  {/* AIReader for simple explanation */}
+                  <AIReader text={explanation.simple_explanation} />
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
@@ -154,6 +249,8 @@ const ELI5 = () => {
                         </li>
                       ))}
                     </ul>
+                    {/* AIReader for key concepts */}
+                    <AIReader text={explanation.key_concepts.join('. ')} />
                   </div>
 
                   <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
@@ -166,6 +263,8 @@ const ELI5 = () => {
                         </li>
                       ))}
                     </ul>
+                    {/* AIReader for examples */}
+                    <AIReader text={explanation.examples.join('. ')} />
                   </div>
                 </div>
 
@@ -180,6 +279,8 @@ const ELI5 = () => {
                         </li>
                       ))}
                     </ul>
+                    {/* AIReader for analogies */}
+                    <AIReader text={explanation.analogies.join('. ')} />
                   </div>
                 )}
               </div>
@@ -189,6 +290,6 @@ const ELI5 = () => {
       </div>
     </div>
   );
-};
+}; 
 
-export default ELI5; 
+export default ELI5;
