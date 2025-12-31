@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 import logging
 from datetime import datetime
-import pdfkit
+from weasyprint import HTML, CSS
 import os
 import tempfile
 
@@ -13,16 +13,11 @@ from app.models.user import UserResponse
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Check if wkhtmltopdf is installed and configure pdfkit
+# WeasyPrint is already configured since it's installed
 try:
-    config = pdfkit.configuration()
     logger.info("PDF generation service initialized successfully")
 except Exception as e:
     logger.error(f"Failed to initialize PDF service: {str(e)}")
-    config = None
-
-logger = logging.getLogger(__name__)
-router = APIRouter()
 
 
 class PDFExportRequest(BaseModel):
@@ -38,12 +33,6 @@ async def export_pdf(
 ):
     """Generate a PDF from provided HTML using WeasyPrint and return it as a download."""
     try:
-        if HTML is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="WeasyPrint is not installed on the server"
-            )
-
         if not payload.html or not payload.html.strip():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

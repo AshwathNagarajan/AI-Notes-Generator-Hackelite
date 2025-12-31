@@ -23,7 +23,7 @@ class ImageProcessResponse(BaseModel):
 
     class Config:
         json_encoders = {ObjectId: str}
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 class ImageHistoryItem(BaseModel):
     """Model for storing image processing history."""
@@ -39,13 +39,13 @@ class ImageHistoryItem(BaseModel):
 
     class Config:
         json_encoders = {ObjectId: str}
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 class ImageHistoryInDB(ImageHistoryItem):
     """Model for image history stored in database."""
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}

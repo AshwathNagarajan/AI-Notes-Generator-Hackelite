@@ -26,7 +26,7 @@ class HistoryItem(BaseModel):
 
     class Config:
         json_encoders = {ObjectId: str}
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 class HistorySummary(BaseModel):
     total_items: int
@@ -36,7 +36,7 @@ class HistorySummary(BaseModel):
 
     class Config:
         json_encoders = {ObjectId: str}
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 @router.get("/", response_model=List[HistoryItem])
 async def get_user_history(
@@ -104,7 +104,7 @@ async def get_history_summary(
         }
         
         history_items = await history_collection.find(query).sort("created_at", -1).to_list(length=None)
-        logger.info(f"Found {len(history_items)} history items for user {current_user.firebase_uid}")
+        logger.info(f"Found {len(history_items)} history items")
         
         # Calculate feature breakdown
         feature_breakdown = {}

@@ -50,8 +50,8 @@ class VoiceService:
                 logger.warning("FFmpeg is not properly installed")
                 logger.debug(f"FFmpeg error output: {result.stderr}")
         except FileNotFoundError:
-            logger.warning("FFmpeg not found. Please install FFmpeg for audio format conversion support")
-            logger.info("Download FFmpeg from: https://www.gyan.dev/ffmpeg/builds/ and add to PATH")
+            logger.debug("FFmpeg not found. Audio format conversion will be limited")
+            logger.debug("To enable all audio features, download FFmpeg from: https://www.gyan.dev/ffmpeg/builds/ and add to PATH")
         except Exception as e:
             logger.error(f"Error checking FFmpeg: {str(e)}")
         

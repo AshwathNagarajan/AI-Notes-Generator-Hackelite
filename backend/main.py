@@ -44,7 +44,9 @@ app.include_router(export.router, prefix="/api/export", tags=["Export"])
 app.include_router(research.router, prefix="/api/research", tags=["Research"])
 
 # Serve static files (for uploaded images)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+uploads_dir = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
 # Health check endpoint

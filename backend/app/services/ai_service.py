@@ -3,6 +3,7 @@ from app.core.config import settings
 import json
 import logging
 from typing import Dict, Any, List
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +16,54 @@ class AIService:
         try:
             # Configure Gemini API
             logger.debug("Initializing Gemini API with key...")
+            if not settings.gemini_api_key:
+                logger.warning("No GEMINI_API_KEY found in settings")
+                self.model = None
+                return
+                
             genai.configure(api_key=settings.gemini_api_key)
+            self.model = None
             
-            # Initialize model
-            logger.debug("Creating GenerativeModel instance...")
-            self.model = genai.GenerativeModel('gemini-1.5-flash')  # Changed to gemini-1.5-flash as it's the stable version
-            logger.debug("AI Service initialized successfully")
+            # Try to dynamically list models
+            try:
+                logger.debug("Attempting to list available models...")
+                for model in genai.list_models():
+                    logger.debug(f"Available model: {model.name}")
+                    if 'generateContent' in model.supported_generation_methods:
+                        logger.info(f"Found suitable model: {model.name}")
+                        try:
+                            self.model = genai.GenerativeModel(model.name)
+                            logger.info(f"Successfully initialized with model: {model.name}")
+                            return
+                        except Exception as e:
+                            logger.warning(f"Failed to initialize {model.name}: {e}")
+                            continue
+            except Exception as e:
+                logger.warning(f"Could not list models dynamically: {e}")
+            
+            # Fallback: Try specific known model names
+            logger.debug("Falling back to known model names...")
+            model_attempts = [
+                'gemini-2.0-flash',
+                'gemini-1.5-pro', 
+                'gemini-1.5-flash',
+                'gemini-pro',
+                'text-bison-001'
+            ]
+            
+            for model_name in model_attempts:
+                try:
+                    logger.debug(f"Attempting to initialize with {model_name}...")
+                    self.model = genai.GenerativeModel(model_name)
+                    logger.info(f"Successfully initialized with model: {model_name}")
+                    return
+                except Exception as e:
+                    logger.debug(f"Model {model_name} failed: {e}")
+                    continue
+            
+            logger.error("Failed to initialize any Gemini model. AI features will be unavailable.")
+            self.model = None
+                
         except Exception as e:
             logger.error(f"Error initializing AI Service: {str(e)}")
             self.model = None
@@ -42,6 +85,12 @@ class AIService:
             summary_mode: 'narrative', 'beginner', 'technical', or 'bullet'
         """
         try:
+            if not self.model:
+                return {
+                    "success": False,
+                    "error": "AI model not available. Please check the backend configuration."
+                }
+            
             # Define style instructions for each mode
             style_instructions = {
                 'narrative': "Write the summary in a flowing, story-like manner that's engaging and easy to follow.",
@@ -81,7 +130,10 @@ class AIService:
             Respond only with the JSON, no additional text.
             """
             
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
             response_text = response.text.strip()
             
             # Handle possible formatting issues in the response
@@ -119,7 +171,10 @@ class AIService:
         """Generate quiz questions from text using AI."""
         try:
             if not self.model:
-                raise ValueError("AI model not initialized. Check if GEMINI_API_KEY is set correctly.")
+                return {
+                    "success": False,
+                    "error": "AI model not available. Please check the backend configuration."
+                }
 
             if not text or not text.strip():
                 raise ValueError("Input text cannot be empty")
@@ -160,7 +215,10 @@ class AIService:
             4. Do not use any markdown formatting
             """
             
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
             response_text = response.text.strip()
             
             # Handle possible markdown code blocks in response
@@ -233,7 +291,10 @@ class AIService:
         """Create a mind map structure for a topic using AI."""
         try:
             if not self.model:
-                raise ValueError("AI model not initialized. Check if GEMINI_API_KEY is set correctly.")
+                return {
+                    "success": False,
+                    "error": "AI model not available. Please check the backend configuration."
+                }
 
             if not topic or not topic.strip():
                 raise ValueError("Topic cannot be empty")
@@ -277,7 +338,10 @@ class AIService:
                 Organize the provided subtopics into logical branches and add additional relevant subtopics as needed.
                 """
             
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
             response_text = response.text.strip()
             
             try:
@@ -348,7 +412,10 @@ class AIService:
         """Simplify complex topics using ELI5 (Explain Like I'm 5) approach."""
         try:
             if not self.model:
-                raise ValueError("AI model not initialized. Check if GEMINI_API_KEY is set correctly.")
+                return {
+                    "success": False,
+                    "error": "AI model not available. The GEMINI_API_KEY may not be properly configured or no suitable models are available. Please check the backend logs for more details."
+                }
 
             if not topic or not topic.strip():
                 raise ValueError("Topic cannot be empty")
@@ -392,7 +459,10 @@ class AIService:
             5. Use language appropriate for the {complexity_level} level
             """
             
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
             response_text = response.text.strip()
             
             try:
@@ -471,7 +541,10 @@ class AIService:
             Respond only with the JSON, no additional text.
             """
             
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
             response_text = response.text.strip()
             
             try:
@@ -552,7 +625,10 @@ class AIService:
             Respond only with the JSON, no additional text.
             """
             
-            response = self.model.generate_content(prompt)
+            response = await asyncio.to_thread(
+                self.model.generate_content,
+                prompt
+            )
             response_text = response.text.strip()
             
             try:
